@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     tags: ['v*']
+    branches: ['**']
   workflow_dispatch:
 
 permissions:
@@ -10,6 +11,8 @@ permissions:
 
 jobs:
   release:
+    # Release bei Tag-Push oder bei einem Commit mit "[release]" in der Nachricht.
+    if: startsWith(github.ref, 'refs/tags/') || contains(github.event.head_commit.message, '[release]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,12 +23,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Build
         run: ./gradlew build --no-daemon
+      - name: Read version
+        id: ver
+        run: echo "version=$(grep '^mod_version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
       - name: Create release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: build/libs/dino-healthbar-*.jar
-          name: Dino Health Bar ${{ github.ref_name }}
+          tag_name: v${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Dino Health Bar v${{ steps.ver.outputs.version }}
+          make_latest: true
           body: |
             Client-Mod für **Fabric 1.21.11**: zeigt die Herzen von Mobs/Custom-Dinos (auch mit 3D-Modellen) als Bossbar.
 
