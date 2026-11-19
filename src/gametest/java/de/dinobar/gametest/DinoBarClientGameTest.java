@@ -41,6 +41,18 @@ public class DinoBarClientGameTest implements FabricClientGameTest {
             check(name2 != null, "Fall 2: keine Bar sichtbar");
             check(name2.contains("30 / 100"), "Fall 2: falscher Text: " + name2);
 
+            // Fall 2b: Stresstest wie ein ModelEngine-Dino: 300 Display-Bones um die Hitbox.
+            for (int i = 0; i < 300; i++) {
+                sp.getServer().runCommand("execute at @p run summon minecraft:item_display ^" + ((i % 10) * 0.3 - 1.5)
+                        + " ^" + ((i / 10 % 10) * 0.3) + " ^" + (5 + (i / 100) * 0.5) + " {item:{id:'minecraft:bone',count:1}}");
+            }
+            context.runOnClient(mc -> de.dinobar.DinoBarClient.maxTickNanos = 0);
+            context.waitTicks(100);
+            long maxNanos = context.computeOnClient(mc -> de.dinobar.DinoBarClient.maxTickNanos);
+            long lastNanos = context.computeOnClient(mc -> de.dinobar.DinoBarClient.lastTickNanos);
+            System.out.println("[DinoBar-Perf] max=" + (maxNanos / 1e6) + "ms last=" + (lastNanos / 1e6) + "ms bar=" + barName(context));
+            context.takeScreenshot("dinobar-stress");
+
             // Fall 3: Wegschauen -> Bar verschwindet nach hideAfterSeconds (3s).
             sp.getServer().runCommand("tp @p ~ ~ ~ 180 0");
             context.waitTicks(80);

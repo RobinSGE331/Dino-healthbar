@@ -32,6 +32,8 @@ public final class DinoBarClient implements ClientModInitializer {
     private static TargetTracker tracker;
     private static HealthBar bar;
     private static long tickCounter;
+    /** Messwerte: Zeit, die der Mod pro Tick braucht (Nanosekunden). */
+    public static long lastTickNanos, maxTickNanos;
 
     private static KeyMapping toggleKey;
     private static KeyMapping debugKey;
@@ -84,7 +86,10 @@ public final class DinoBarClient implements ClientModInitializer {
             if (mc.level == null) tracker.reset();
             return;
         }
+        long t0 = System.nanoTime();
         bar.update(mc, tracker.tick(mc, tickCounter));
+        lastTickNanos = System.nanoTime() - t0;
+        if (lastTickNanos > maxTickNanos) maxTickNanos = lastTickNanos;
     }
 
     private static void toggle() {
@@ -108,6 +113,9 @@ public final class DinoBarClient implements ClientModInitializer {
     /** Zeigt, was der Mod "sieht" – hilft herauszufinden, wie die Dinos auf dem Server gebaut sind. */
     private static void debug(Minecraft mc) {
         if (mc.player == null || mc.level == null) return;
+        msg(Component.literal(String.format(java.util.Locale.ROOT, "Mod-Zeit/Tick: zuletzt %.3f ms, max %.3f ms",
+                lastTickNanos / 1e6, maxTickNanos / 1e6)).withStyle(ChatFormatting.GRAY));
+        maxTickNanos = 0;
         Entity looked = mc.crosshairPickEntity != null ? mc.crosshairPickEntity : TargetTracker.raycast(mc.player, 32);
         if (looked == null) { msg(Component.literal("Debug: Du schaust kein Entity an.").withStyle(ChatFormatting.GRAY)); return; }
 
