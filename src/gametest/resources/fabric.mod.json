@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "dinobar-gametest",
+  "version": "1.0.0",
+  "name": "Dino Health Bar Gametest",
+  "environment": "client",
+  "entrypoints": { "fabric-client-gametest": ["de.dinobar.gametest.DinoBarClientGameTest"] },
+  "depends": { "dinobar": "*" }
+}
