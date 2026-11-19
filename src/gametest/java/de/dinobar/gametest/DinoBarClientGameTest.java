@@ -53,6 +53,20 @@ public class DinoBarClientGameTest implements FabricClientGameTest {
             System.out.println("[DinoBar-Perf] max=" + (maxNanos / 1e6) + "ms last=" + (lastNanos / 1e6) + "ms bar=" + barName(context));
             context.takeScreenshot("dinobar-stress");
 
+            // Fall 2c: Aufbau wie auf dem Server (aus /dinobar debug): Leben liegt auf einem unsichtbaren
+            // Marker-Armorstand (0x0) mit 660 Max-LP. Daneben ein Deko-Armorstand und ein 20-LP-Lockvogel.
+            sp.getServer().runCommand("kill @e[type=!minecraft:player]");
+            context.waitTicks(40);
+            sp.getServer().runCommand("execute at @p run summon minecraft:armor_stand ^ ^ ^6 {Marker:1b,Invisible:1b,Health:206.6f,attributes:[{id:'minecraft:max_health',base:660d}]}");
+            sp.getServer().runCommand("execute at @p run summon minecraft:armor_stand ^1 ^ ^5.5 {Invisible:1b}");
+            sp.getServer().runCommand("execute at @p run summon minecraft:iron_golem ^-1 ^ ^5.5 {NoAI:1b,Silent:1b,Health:20f,attributes:[{id:'minecraft:max_health',base:20d}],active_effects:[{id:'minecraft:invisibility',duration:-1,show_particles:0b}]}");
+            sp.getServer().runCommand("execute at @p run summon minecraft:interaction ^ ^ ^5 {width:3f,height:3f}");
+            context.waitTicks(30);
+            String name3 = barName(context);
+            context.takeScreenshot("dinobar-armorstand-base");
+            check(name3 != null, "Fall 2c: keine Bar sichtbar");
+            check(name3.contains("103.3 / 330"), "Fall 2c: falscher Text: " + name3);
+
             // Fall 3: Wegschauen -> Bar verschwindet nach hideAfterSeconds (3s).
             sp.getServer().runCommand("tp @p ~ ~ ~ 180 0");
             context.waitTicks(80);

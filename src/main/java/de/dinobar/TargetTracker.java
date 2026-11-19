@@ -23,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class TargetTracker {
     private static final int NONE = -1;
+    private static final float VANILLA_ARMOR_STAND_HP = 20f;
 
     private final DinoBarConfig config;
 
@@ -155,15 +156,21 @@ public final class TargetTracker {
         return found;
     }
 
+    /**
+     * Sucht in der Umgebung den Mob, der am wahrscheinlichsten die echten Lebenspunkte trägt:
+     * höchstes Max-Leben gewinnt (Hilfs-Entities haben meist Standardwerte wie 20), bei Gleichstand der nächste.
+     */
     private LivingEntity nearest(Entity source) {
         AABB area = source.getBoundingBox().inflate(config.resolveRadius);
         List<LivingEntity> list = source.level().getEntitiesOfClass(LivingEntity.class, area, le -> valid(le) != null);
         Vec3 c = source.getBoundingBox().getCenter();
         LivingEntity best = null;
+        float bestMax = -1f;
         double bestD = Double.MAX_VALUE;
         for (LivingEntity le : list) {
-            double d = le.getBoundingBox().getCenter().distanceToSqr(c);
-            if (d < bestD) { bestD = d; best = le; }
+            float max = le.getMaxHealth();
+            double d = le.position().distanceToSqr(c);
+            if (max > bestMax || (max == bestMax && d < bestD)) { bestMax = max; bestD = d; best = le; }
         }
         return best;
     }
@@ -171,7 +178,10 @@ public final class TargetTracker {
     /** Gibt das Entity zurück, wenn es ein anzeigbares Mob ist, sonst null. */
     public LivingEntity valid(Entity e) {
         if (!(e instanceof LivingEntity le)) return null;
-        if (le.isRemoved() || le instanceof ArmorStand) return null;
+        if (le.isRemoved()) return null;
+        // Normale Armorstände (immer 20 LP) sind Deko. 3D-Modell-Plugins legen das echte Leben aber oft auf
+        // einen unsichtbaren Marker-Armorstand mit erhöhtem Max-Leben – den wollen wir.
+        if (le instanceof ArmorStand && !(le.getMaxHealth() > VANILLA_ARMOR_STAND_HP)) return null;
         if (le == Minecraft.getInstance().player) return null;
         if (le instanceof Player && !config.showPlayers) return null;
         if (config.minMaxHealth > 0f && le.getMaxHealth() < config.minMaxHealth) return null;
